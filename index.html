@@ -98,6 +98,10 @@ button{font:inherit;color:inherit}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font-size:12.5px;font-weight:600;color:var(--muted)}
 input,select{width:100%;min-height:44px;padding:0 12px;font:inherit;font-size:16px;color:var(--ink);background:var(--raise);border:1px solid var(--line);border-radius:var(--r)}
+select{-webkit-appearance:none;appearance:none;height:44px;padding-right:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b7a90' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px;text-overflow:ellipsis}
+input{height:44px}
+.where select{padding-right:26px;background-position:right 8px center}
+.fgrid .field label{min-height:1.3em}
 input.mono{font-family:var(--font-mono);font-size:14px}
 .inline{display:flex;gap:8px}
 .inline input{flex:1;min-width:0}
@@ -788,12 +792,12 @@ function vResult(){
     fld('np-size','Dydis','<input id="np-size" placeholder="pvz. 7 × 60 mm" autocomplete="off">','Matmenys ar modelis, kad atskirtumėte variantus.')+
     fld('np-cat','Grupė','<select id="np-cat">'+groups().map(c=>'<option>'+esc(c)+'</option>').join('')+'</select>','Prekių rūšis sąrašui (stentai, kateteriai…).')+
     fld('np-cost','Savikaina, €','<input id="np-cost" inputmode="decimal" placeholder="0">','Vieno vieneto pirkimo kaina. Iš jos skaičiuojama atsargų vertė ir sąnaudos.')+
-    fld('np-pm','Sunaudojimas per mėn.','<input id="np-pm" inputmode="decimal" placeholder="2">','Nebūtina. Tik statistikai ir sąnaudų prognozei.')+
-    fld('np-min','Min. likutis (užsakymo riba)','<input id="np-min" inputmode="numeric" placeholder="4">','Kai bendras likutis (sandėlis + operacinės) nukrenta iki šio skaičiaus, siūloma užsakyti. 0 = nesiūlyti.')+
+    fld('np-pm','Sunaudojimas / mėn.','<input id="np-pm" inputmode="decimal" placeholder="2">','Nebūtina. Tik statistikai ir sąnaudų prognozei.')+
+    fld('np-min','Min. likutis','<input id="np-min" inputmode="numeric" placeholder="4">','Užsakymo riba: kai bendras likutis nukrenta iki šio skaičiaus, siūloma užsakyti. 0 = nesiūlyti.')+
     fld('np-max','Max. likutis','<input id="np-max" inputmode="numeric" placeholder="8">','Iki kiek papildyti užsakant. Siūlomas kiekis = MAX − dabartinis likutis.')+
     fld('np-abc','ABC kategorija','<select id="np-abc"><option value="A">A · kiekvienas vienetas skenuojamas</option><option value="B">B · partijomis (kiekis)</option><option value="C">C · neskenuojama, skaičiuojama</option></select>','<span id="np-abc-h">'+ABCHINT.A+'</span>','span2')+
     fld('np-pack','Vnt. pakuotėje (B)','<input id="np-pack" inputmode="numeric" placeholder="10">','Kiek vienetų yra dėžėje. Nuskenavus dėžę sukuriama tiek vienetų.')+
-    fld('np-or','Min. kiekis kiekvienoje operacinėje','<input id="np-or" inputmode="numeric" placeholder="1">','Mažiausias kiekis, kuris visada turi būti kiekvienoje operacinėje; žemiau siūloma papildyti iš sandėlio. Kiekvienai operacinei atskirai galima pakeisti prekės kortelėje.','')+'</div>'+
+    fld('np-or','Min. operacinėje','<input id="np-or" inputmode="numeric" placeholder="1">','Mažiausias kiekis kiekvienoje operacinėje; žemiau siūloma papildyti. Atskirai operacinei keičiama prekės kortelėje.','')+'</div>'+
     '<div class="actions"><button class="btn" data-act="addprod">Pridėti į katalogą</button></div></div>';
     return h;
   }
@@ -1031,7 +1035,8 @@ function vStock(){
     '<div class="sfilters"><div class="field"><label for="q">Paieška</label><input id="q" type="search" value="'+esc(ui.q)+'" placeholder="Pavadinimas, dydis ar GTIN"></div>'+
     '<div class="field"><label for="fplace">Vieta</label><select id="fplace">'+['Visos'].concat(LOCS,['Kelyje']).map(l=>'<option'+(ui.place===l?' selected':'')+'>'+l+'</option>').join('')+'</select></div>'+
     '<div class="field"><label for="fcat">Grupė</label><select id="fcat">'+['Visos'].concat(groups()).map(c=>'<option'+(ui.cat===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div></div>'+
-    '<div id="stocklist" class="plist" style="margin-top:6px">'+stockRows()+'</div>';
+    '<div id="stocklist" class="plist" style="margin-top:6px">'+stockRows()+'</div>'+
+    '<div class="actions"><button class="btn ghost" data-act="csvx" data-v="stock" data-dl hidden>Eksportuoti atsargas CSV</button></div>';
 }
 
 const TYPE={in:['ok','Priėmimas'],move:['neutral','Perkėlimas'],out:['use','Panaudota'],writeoff:['crit','Nurašymas']};
@@ -1125,7 +1130,7 @@ function vCtl(){
   const ol=orderList(),P={};
   let h=can('order')?'<h2 style="margin-top:6px">Užsakymo pasiūlymas vaistinei · '+ol.length+'</h2>':'';
   if(can('order'))h+=ol.length?'<div class="units">'+ol.map(p=>'<div class="urow"><div><b>'+esc(p.name)+'</b><div class="sub mono">'+esc(p.size)+'</div><div class="sub">'+(hasMM(p)?'iš viso '+whEff(p)+' (sandėlyje '+qsum(usable(stockOf(p.gtin,WH)))+')':'sandėlyje '+qsum(usable(stockOf(p.gtin,WH)))+(orDeficit(p)?' (−'+orDeficit(p)+' operacinėms)':''))+' · MIN '+whMin(p)+' · MAX '+whMax(p)+'</div></div><div style="text-align:right"><span class="pill neutral">užsakyti '+suggest(p)+'</span></div></div>').join('')+'</div>'+
-    '<div class="actions"><button class="btn line" data-act="copy">Kopijuoti sąrašą</button></div><textarea class="copybox" id="ordertxt" readonly>'+esc(orderText())+'</textarea>':'<div class="empty">'+(S.catalog.length?'Visos atsargos pasiekė tikslą.':'Katalogas tuščias. Prekės atsiras po pirmo skenavimo.')+'</div>';
+    '<div class="actions"><button class="btn line" data-act="copy">Kopijuoti sąrašą</button><button class="btn line" data-act="csvx" data-v="order" data-dl hidden>Eksportuoti CSV</button></div><textarea class="copybox" id="ordertxt" readonly>'+esc(orderText())+'</textarea>':'<div class="empty">'+(S.catalog.length?'Visos atsargos pasiekė tikslą.':'Katalogas tuščias. Prekės atsiras po pirmo skenavimo.')+'</div>';
   if(can('order'))h+='<p class="foot" style="margin-top:8px">Užsakymo signalas: kai bendras likutis (sandėlis + operacinės + kelyje) nukrenta iki prekės MIN, siūloma užsakyti iki MAX. Ribas nustatote prekės kortelėje (Atsargos → prekė → Redaguoti prekę).</p>';
   P.order=h;h='';
   if(can('move'))h+='<h2>Operacinių papildymas</h2><div class="units">'+ORS.map(o=>{const n=S.catalog.reduce((s,p)=>s+orNeed(p,o),0);
@@ -1358,6 +1363,7 @@ function vStat(){
   const T=[['sum','Apžvalga'],['items','Pagal prekę'],['wo','Nurašymai'],['ppl','Gydytojai ir procedūros'],['val','Atsargų vertė']];
   if(!T.some(t=>t[0]===ui.stS))ui.stS='sum';
   h+='<div class="chips" style="margin-top:10px" role="tablist" aria-label="Statistikos skyriai">'+T.map(t=>'<button class="chip" role="tab" data-act="sts" data-v="'+t[0]+'" aria-pressed="'+(ui.stS===t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+  h+='<div class="actions" style="margin-top:8px"><button class="btn ghost" data-act="csvx" data-v="stat" data-dl hidden>Eksportuoti šį skyrių CSV</button></div>';
   const sec=(t,b)=>'<section><h2>'+t+'</h2>'+b+'</section>';
   const top=(m,n,cls,fmt)=>{const l=Object.keys(m).map(k=>({k:k,q:m[k].q,v:m[k].v,p:m[k].p?m[k].p.size:0})).sort((a,b)=>b.v-a.v),mx=Math.max.apply(null,l.map(r=>r.v).concat([1]));
     return {l:l,html:'<div class="units">'+l.slice(0,n).map(r=>srow(r.k,'','<b>'+r.q+' vnt.</b>',eur.format(r.v)+(r.p?' · '+r.p+' proc.':''),r.v/mx*100,cls)).join('')+'</div>'+(l.length>n?'<div class="sub" style="margin:-4px 0 12px">Dar '+(l.length-n)+' eil. nerodoma</div>':'')};};
@@ -1683,21 +1689,47 @@ async function decodeImage(file){
   }finally{URL.revokeObjectURL(url);}
 }
 
-async function backup(){
+
+/* ---------- failų išsaugojimas ir CSV ---------- */
+async function saveFile(name,data,mime){
   const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
-  if(!dl){toast('Atsarginė kopija šiame rodinyje nepasiekiama','crit');return;}
-  try{await dl.save({filename:'ir-sandelis-kopija-'+fmtDay(Date.now())+'.json',data:JSON.stringify(S)});try{localStorage.setItem(BK,String(Date.now()));}catch(e0){}render();}
-  catch(e){if(e&&e.code!=='declined')toast('Nepavyko išsaugoti failo','crit');}
+  if(dl){try{await dl.save({filename:name,data:data});return true;}catch(e){if(e&&e.code!=='declined')toast('Nepavyko išsaugoti failo','crit');return false;}}
+  try{const u=URL.createObjectURL(new Blob([data],{type:mime||'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);return true;}
+  catch(e){toast('Nepavyko išsaugoti failo','crit');return false;}
+}
+const csvQ=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+const nf=n=>String(Math.round((+n||0)*100)/100).replace('.',',');
+const csvText=rows=>'\ufeff'+rows.map(r=>r.map(csvQ).join(';')).join('\r\n');
+async function csvOut(name,rows){if(await saveFile(name,csvText(rows)))toast('CSV išsaugotas: '+name);}
+function csvX(kind){
+  const day=fmtDay(Date.now());
+  if(kind==='stock'){
+    const rows=withIx(()=>{const R=[['Prekė','Dydis','GTIN','Grupė','Kategorija','Sandėlyje'].concat(ORS,['Kelyje','Iš viso','Iš jų dėžėje','Pasibaigę','MIN','MAX','Siūloma užsakyti','Artimiausias galiojimas','Savikaina €','Vertė €'])];
+      S.catalog.forEach(p=>{const all=stockOf(p.gtin),ok=usable(all),near=ok.map(u=>u.exp).sort()[0]||'';
+        R.push([p.name,p.size,p.gtin,p.cat,abcOf(p),qsum(all.filter(u=>u.loc===WH))].concat(ORS.map(o=>qsum(all.filter(u=>u.loc===o))),[qsum(all.filter(u=>isTr(u.loc))),qsum(all),qsum(all.filter(u=>u.box)),qsum(all.filter(u=>daysTo(u.exp)<0)),whMin(p),whMax(p),suggest(p),abcOf(p)==='C'?'':near,nf(p.cost),nf(qsum(ok)*p.cost)]));});
+      return R;});
+    csvOut('ir-sandelio-atsargos-'+day+'.csv',rows);
+  }else if(kind==='order'){
+    const rows=withIx(()=>[['Prekė','Dydis','GTIN','Bendras likutis','Sandėlyje','MIN','MAX','Užsakyti']].concat(orderList().map(p=>[p.name,p.size,p.gtin,whEff(p),qsum(usable(stockOf(p.gtin,WH))),whMin(p),whMax(p),suggest(p)])));
+    if(rows.length<2){toast('Užsakymo pasiūlymų nėra','crit');return;}
+    csvOut('ir-uzsakymo-pasiulymas-'+day+'.csv',rows);
+  }else if(kind==='stat'){
+    const A=statData(),W=A.W,tab=ui.stS,per=fmtDay(W.from)+'_'+fmtDay(W.to-1);let rows,nm;
+    if(tab==='wo'){nm='nurasymai';rows=[['Laikas','Prekė','Dydis','GTIN','LOT','SN','Kiekis','Priežastis','Vertė €','Vartotojas']].concat(A.wos.map(l=>{const p=prod(l.gtin);return [fmtTs(l.ts),p?p.name:'',p?p.size:'',l.gtin,l.lot,l.sn,l.qty,l.note,nf(l.qty*cost(l.gtin)),l.by];}));}
+    else if(tab==='ppl'){nm='gydytojai-procedura';rows=[['Laikas','Procedūra','Gydytojas','Prekė','Dydis','GTIN','Kiekis','Vertė €','Operacinė','Vartotojas']].concat(A.uses.map(l=>{const p=prod(l.gtin);return [fmtTs(l.ts),l.proc||'',l.dr||'',p?p.name:'',p?p.size:'',l.gtin,l.qty,nf(l.qty*cost(l.gtin)),l.loc,l.by];}));}
+    else{nm='pagal-preke';rows=[['Prekė','Dydis','GTIN','Grupė','Sunaudota vnt.','Sunaudojimo vertė €','Vid. vnt./mėn.','Dabartinis likutis','Užteks dienų','Savikaina €','Likučio vertė €']].concat(A.rows.slice().sort((a,b)=>b.v-a.v).map(r=>[r.p.name,r.p.size,r.p.gtin,r.p.cat,r.q,nf(r.v),nf(r.mo),r.have,r.days==null?'':r.days,nf(r.p.cost),nf(r.have*r.p.cost)]));}
+    if(rows.length<2){toast('Šiuo laikotarpiu duomenų nėra','crit');return;}
+    csvOut('ir-statistika-'+nm+'-'+per+'.csv',rows);
+  }
+}
+async function backup(){
+  if(await saveFile('ir-sandelis-kopija-'+fmtDay(Date.now())+'.json',JSON.stringify(S),'application/json')){try{localStorage.setItem(BK,String(Date.now()));}catch(e0){}render();}
 }
 async function exportCsv(){
-  const dl=window.claude&&window.claude.use?await window.claude.use('downloads'):null;
-  if(!dl){toast('Eksportas šiame rodinyje nepasiekiamas','crit');return;}
   if(!logRows().length){toast('Pasirinktam filtrui įrašų nėra','crit');return;}
-  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const rows=[['Laikas','Veiksmas','Prekė','Dydis','GTIN','LOT','SN','Galioja iki','Kiekis','Iš','Į','Vartotojas','Procedūra','Gydytojas','Pastaba','Aktas','Cito']];
   logRows().reverse().forEach(l=>{const p=prod(l.gtin);rows.push([fmtTs(l.ts),TYPE[l.type][1],p?p.name:'',p?p.size:'',l.gtin,l.lot,l.sn,l.exp,l.qty,l.loc,l.to,l.by,l.proc,l.dr||'',l.note,l.act||'',l.cito?'taip':'']);});
-  try{await dl.save({filename:csvName(),data:'﻿'+rows.map(r=>r.map(q).join(',')).join('\n')});}
-  catch(e){if(e&&e.code!=='declined')toast('Nepavyko išsaugoti failo','crit');}
+  csvOut(csvName(),rows);
 }
 
 /* ---------- events ---------- */
@@ -1775,6 +1807,7 @@ document.addEventListener('click',e=>{
   else if(a==='logf'){ui.logF=v;ui.logN=40;render();}
   else if(a==='more'){ui.logN+=40;render();}
   else if(a==='csv')exportCsv();
+  else if(a==='csvx')csvX(v);
   else if(a==='refill'){ui.dest=v;ui.where=WH;ui.mode='move';ui.scan=null;ui.tab='scan';render();window.scrollTo(0,0);}
   else if(a==='copy'){
     const t=orderText();
@@ -1947,6 +1980,7 @@ const AUTOLOGIN=true;
 })();
 render();
 const revealDl=()=>{if(window.__dl)document.querySelectorAll('[data-dl]').forEach(b=>{b.hidden=false;});};
+if(!(window.claude&&window.claude.use)){window.__dl=1;revealDl();}
 try{(async()=>{const d=window.claude&&window.claude.use?await window.claude.use('downloads'):null;if(d){window.__dl=1;revealDl();}})();}catch(e){}
 new MutationObserver(revealDl).observe(document.getElementById('view'),{childList:true});
 })();
