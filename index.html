@@ -114,6 +114,11 @@ input.mono{font-family:var(--font-mono);font-size:14px}
 #np-packw[hidden]+#np-orw{grid-column:1/-1}
 .fgrid .field label{font-size:13px;color:var(--ink)}
 .fgrid [hidden]{display:none!important}
+.egrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+.egrid .span2{grid-column:1/-1}
+.egh{grid-column:1/-1;margin-top:6px;padding-top:12px;border-top:1px solid var(--line);font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.egrid select{text-overflow:ellipsis}
+.grid2{align-items:end}
 .hint{font-size:12px;line-height:1.35;color:var(--muted)}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .btn{min-height:44px;padding:0 16px;border-radius:var(--r);border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer}
@@ -244,6 +249,10 @@ details .in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
   .sfilters .field:first-child{grid-column:auto}
   .plist,.loglist,.oplist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;align-items:start}
   .plist>.empty,.loglist>.empty{grid-column:1/-1}
+  .plist>.prow.open{grid-column:1/-1}
+  .prow.open details{max-width:720px}
+  .prow.open .egrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .prow.open .egrid .span2{grid-column:span 2}
   .chips{flex-wrap:wrap}
   .stgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;align-items:start}
   .stitems{columns:2;column-gap:28px}
@@ -930,16 +939,31 @@ function actCheck(r,p){
 function boxEdit(p){
   const g=p.gtin,ks=Object.keys(S.boxes).filter(k=>S.boxes[k].unit===g);
   return '<div class="field"><label>Dėžučių kodai</label>'+(ks.length?ks.map(k=>'<div class="inline" style="align-items:center;justify-content:space-between"><span class="mono">'+esc(k)+' · '+S.boxes[k].qty+' vnt.</span><button class="btn line" data-act="delbox" data-v="'+esc(k)+'" style="min-height:34px;flex:none">Šalinti</button></div>').join(''):'<span class="sub">Nėra. Dėžės kodą galima susieti skenuojant jį skiltyje Priėmimas.</span>')+'</div>'+
-    '<div class="grid2"><div class="field"><label for="bxg-'+g+'">Dėžės GTIN</label><input class="mono" id="bxg-'+g+'" inputmode="numeric"></div><div class="field"><label for="bxq-'+g+'">Vnt. dėžėje</label><input class="mono" id="bxq-'+g+'" inputmode="numeric" value="'+(p.pack||1)+'"></div></div>'+
+    '<div class="egrid"><div class="field"><label for="bxg-'+g+'">Dėžės GTIN</label><input class="mono" id="bxg-'+g+'" inputmode="numeric"></div><div class="field"><label for="bxq-'+g+'">Vnt. dėžėje</label><input class="mono" id="bxq-'+g+'" inputmode="numeric" value="'+(p.pack||1)+'"></div></div>'+
     '<button class="btn line" data-act="addbox" data-v="'+g+'">Pridėti dėžės kodą</button>';
 }
 function editBlock(p){
   if(!can('catalog'))return '';
   const g=p.gtin,canDel=!S.units.some(u=>u.gtin===g);
   const f=(id,l,v,m)=>'<div class="field"><label for="ed-'+id+'-'+g+'">'+l+'</label><input id="ed-'+id+'-'+g+'"'+(m?' inputmode="decimal"':'')+' value="'+esc(v)+'"></div>';
-  return '<details><summary>Redaguoti prekę</summary><div class="in"><div class="grid2">'+f('name','Pavadinimas',p.name)+f('size','Dydis',p.size)+f('cost','Savikaina, €',p.cost,1)+f('min','Min. likutis (užsakymo riba)',whMin(p),1)+f('max','Max. likutis',whMax(p),1)+f('or','Min. kiekis kiekvienoje operacinėje',p.orPar||0,1)+ORS.map((o,i)=>f('om'+i,o+' (tuščia = numatytasis)',p.orMin&&typeof p.orMin[o]==='number'&&p.orMin[o]!==(p.orPar||0)?p.orMin[o]:'',1)).join('')+f('pm','Sunaudojimas per mėn. (statistikai)',p.perMonth,1)+'<div class="field" id="ed-packw-'+g+'"'+(abcOf(p)==='B'?'':' hidden')+'><label for="ed-pack-'+g+'">Vnt. pakuotėje (B)</label><input id="ed-pack-'+g+'" inputmode="decimal" value="'+esc(p.pack||1)+'"></div>'+
-    (sugMM(p)?'<div class="note info" style="grid-column:1/-1">Pagal faktinį sunaudojimą (~'+sugMM(p).pm+' vnt./mėn.) siūloma: MIN '+sugMM(p).min+', MAX '+sugMM(p).max+'. <button class="btn line" data-act="applysug" data-v="'+g+'" style="min-height:34px">Taikyti</button></div>':'')+'<div class="field"><label for="ed-abc-'+g+'">ABC kategorija</label><select id="ed-abc-'+g+'"><option value="A"'+(abcOf(p)==='A'?' selected':'')+'>A · kiekvienas vienetas</option><option value="B"'+(abcOf(p)==='B'?' selected':'')+'>B · partijomis</option><option value="C"'+(abcOf(p)==='C'?' selected':'')+'>C · skaičiuojama</option></select></div>'+
-    '<div class="field"><label for="ed-cat-'+g+'">Grupė</label><select id="ed-cat-'+g+'">'+groups().concat(p.cat&&groups().indexOf(p.cat)<0?[p.cat]:[]).map(c=>'<option'+(p.cat===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div></div>'+
+  const f2=(id,l,v,ph,cls)=>'<div class="field'+(cls?' '+cls:'')+'"><label for="ed-'+id+'-'+g+'">'+l+'</label><input id="ed-'+id+'-'+g+'" inputmode="decimal"'+(ph!==undefined?' placeholder="'+esc(ph)+'"':'')+' value="'+esc(v)+'"></div>';
+  const so=(v,l)=>'<option value="'+v+'"'+(abcOf(p)===v?' selected':'')+'>'+l+'</option>';
+  const sg=sugMM(p);
+  return '<details><summary>Redaguoti prekę</summary><div class="in"><div class="egrid">'+
+    '<div class="field span2"><label for="ed-name-'+g+'">Pavadinimas</label><input id="ed-name-'+g+'" value="'+esc(p.name)+'"></div>'+
+    '<div class="field"><label for="ed-size-'+g+'">Dydis</label><input id="ed-size-'+g+'" value="'+esc(p.size)+'"></div>'+
+    f2('cost','Savikaina, €',p.cost)+
+    '<div class="field"><label for="ed-abc-'+g+'">ABC kategorija</label><select id="ed-abc-'+g+'">'+so('A','A · po vieną')+so('B','B · partijomis')+so('C','C · skaičiuojama')+'</select></div>'+
+    '<div class="field"><label for="ed-cat-'+g+'">Grupė</label><select id="ed-cat-'+g+'">'+groups().concat(p.cat&&groups().indexOf(p.cat)<0?[p.cat]:[]).map(c=>'<option'+(p.cat===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></div>'+
+    '<div class="field" id="ed-packw-'+g+'"'+(abcOf(p)==='B'?'':' hidden')+'><label for="ed-pack-'+g+'">Vnt. pakuotėje</label><input id="ed-pack-'+g+'" inputmode="decimal" value="'+esc(p.pack||1)+'"></div>'+
+    '<div class="egh">Atsargos ribos</div>'+
+    f2('min','Min. likutis',whMin(p))+f2('max','Max. likutis',whMax(p))+
+    f2('or','Min. operacinėje',p.orPar||0)+f2('pm','Sunaudojimas per mėn.',p.perMonth)+
+    '<div class="hint span2">Min. ir Max. likutis skaičiuojami iš viso (sandėlis + operacinės). Kai likutis nukrenta iki Min., siūloma užsakyti iki Max. Sunaudojimas per mėnesį naudojamas tik statistikoje.</div>'+
+    (sg?'<div class="note info span2">Pagal faktinį sunaudojimą (~'+sg.pm+' vnt./mėn.) siūloma: MIN '+sg.min+', MAX '+sg.max+'. <button class="btn line" data-act="applysug" data-v="'+g+'" style="min-height:34px">Taikyti</button></div>':'')+
+    '<div class="egh">Atskira operacinė (nebūtina)</div>'+
+    ORS.map((o,i)=>f2('om'+i,o,p.orMin&&typeof p.orMin[o]==='number'&&p.orMin[o]!==(p.orPar||0)?p.orMin[o]:'',String(p.orPar||0))).join('')+
+    '</div>'+
     boxEdit(p)+'<p class="sub" style="margin:0">GTIN '+esc(g)+'</p><div class="inline"><button class="btn" data-act="saveprod" data-v="'+g+'">Išsaugoti</button>'+(canDel?'<button class="btn danger" data-act="delprod" data-v="'+g+'">Ištrinti prekę</button>':'')+'</div></div></details>';
 }
 const shortLoc=l=>l===WH?'Sandėlis':l.replace('Operacinė ','Op. ');
@@ -979,7 +1003,7 @@ function stockRow(p,all,at,lvl,pl){
     const ratio=lvl?have/lvl:1,cls=ratio<.5?'low':ratio<1?'mid':'';
     const near=at[0],open=!!ui.open[p.gtin],bxN=qsum(at.filter(u=>u.box));
     const split=ORS.map(o=>qsum(all.filter(u=>u.loc===o))).join('/');
-    let h='<div class="prow"><button class="phead" data-act="toggle" data-v="'+p.gtin+'" aria-expanded="'+open+'"><div><b>'+esc(p.name)+'</b><span class="sub mono">'+esc(p.size)+' · '+esc(p.cat)+'</span></div>'+
+    let h='<div class="prow'+(open?' open':'')+'"><button class="phead" data-act="toggle" data-v="'+p.gtin+'" aria-expanded="'+open+'"><div><b>'+esc(p.name)+'</b><span class="sub mono">'+esc(p.size)+' · '+esc(p.cat)+'</span></div>'+
       '<div class="qty"><b>'+n+'</b><small>'+(pl==='Visos'?'iš viso':'lygis '+lvl)+'</small></div></button>'+locChips(p,all,trq,pl)+
       (lvl?'<div class="meter '+cls+'" aria-hidden="true"><i style="width:'+Math.min(100,Math.round(ratio*100))+'%"></i></div>':'')+
       '<div class="ptags">'+(low?'<span class="pill crit">'+(pl==='Visos'?'Reikia užsakyti':pl===WH?'MIN pasiektas':'Žemiau lygio')+'</span>':'')+(near?(abcOf(p)==='C'?'':expPill(near.exp)+'<span class="sub mono">artimiausias '+near.exp+'</span>'):'<span class="pill crit">Nėra</span>')+
